@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{8881F223-85D9-42B6-8EF8-B142B85277DC}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>LSMStorage.Core</RootNamespace>
+    <AssemblyName>LSMStorage.Core</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\DatabaseManager.cs" />
+    <Compile Include="src\DiskTablesMerger.cs" />
+    <Compile Include="Properties\FrienlyAssemblies.cs" />
+    <Compile Include="src\IMemTable\IMemTable.cs" />
+    <Compile Include="src\IMemTable\MemTable.cs" />
+    <Compile Include="src\MergeMethod.cs" />
+    <Compile Include="src\OperationLog\IOpLogReader.cs" />
+    <Compile Include="src\OperationLog\IOpLogWriter.cs" />
+    <Compile Include="src\OperationLog\Operations\AddOperation\AddOperationSerializer.cs" />
+    <Compile Include="src\OperationLog\Operations\IOperationSerializer.cs" />
+    <Compile Include="src\OperationLog\Operations\IOperationSerializerT.cs" />
+    <Compile Include="src\OperationLog\Operations\IOperation.cs" />
+    <Compile Include="src\OperationLog\Operations\AddOperation\AddOperation.cs" />
+    <Compile Include="src\OperationLog\Operations\OperationSerializer.cs" />
+    <Compile Include="src\IMemTable\Item.cs" />
+    <Compile Include="src\OperationLog\Operations\RemoveOperation\RemoveOperation.cs" />
+    <Compile Include="src\OperationLog\Operations\RemoveOperation\RemoveOperationSerializer.cs" />
+    <Compile Include="src\OperationLog\OpLogManager.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\Utilities\File.cs" />
+    <Compile Include="src\Utilities\IFile.cs" />
+    <Compile Include="src\Utilities\Preconditions.cs" />
+    <Compile Include="src\Utilities\StreamExtensions.cs" />
+    <Compile Include="src\OperationLog\IOpLogapplier.cs" />
+    <Compile Include="src\OperationLog\OpLogApplier.cs" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

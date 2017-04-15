@@ -4,6 +4,8 @@ namespace LSMStorage.Core
 {
     public interface IFile
     {
-        Stream GetStream();
+        Stream OpenStream();
+        Stream OpenStream(FileAccess fileAccess);
+        Stream OpenStream(FileAccess fileAccess, FileShare fileShare);
     }
 }

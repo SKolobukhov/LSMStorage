@@ -1,8 +1,9 @@
+using System;
 using System.Threading.Tasks;
 
 namespace LSMStorage.Core
 {
-    public interface IOpLogReader
+    public interface IOpLogReader: IDisposable
     {
         bool CanRead { get; }
 

@@ -50,14 +50,14 @@ namespace LSMStorage.Tests
             var item1 = Item.CreateItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
             var item2 = Item.CreateItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
 
+            using (var opLogManager = new OpLogManager(file, serializer))
             {
-                var opLogManager = new OpLogManager(file, serializer);
                 var memTable = new MemTable(opLogManager);
                 memTable.Apply(item1.ToOperation());
                 memTable.Apply(item2.ToOperation());
             }
+            using (var opLogManager = new OpLogManager(file, serializer))
             {
-                var opLogManager = new OpLogManager(file, serializer);
                 var opLogApplier = new OpLogApplier(opLogManager);
                 var memTable = new MemTable(opLogManager);
                 opLogApplier.Apply(memTable);
@@ -76,14 +76,14 @@ namespace LSMStorage.Tests
             var item1 = Item.CreateItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
             var item2 = Item.CreateTombStone(item1.Key);
 
+            using (var opLogManager = new OpLogManager(file, serializer))
             {
-                var opLogManager = new OpLogManager(file, serializer);
                 var memTable = new MemTable(opLogManager);
                 memTable.Apply(item1.ToOperation());
                 memTable.Apply(item2.ToOperation());
             }
+            using (var opLogManager = new OpLogManager(file, serializer))
             {
-                var opLogManager = new OpLogManager(file, serializer);
                 var opLogApplier = new OpLogApplier(opLogManager);
                 var memTable = new MemTable(opLogManager);
                 opLogApplier.Apply(memTable);

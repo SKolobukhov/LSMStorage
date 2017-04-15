@@ -53,6 +53,8 @@
     <Compile Include="src\OperationLog\Operations\RemoveOperation\RemoveOperationSerializer.cs" />
     <Compile Include="src\OperationLog\OpLogManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\Snapshot\SnapshotManager.cs" />
+    <Compile Include="src\Snapshot\ISnapshotWriter.cs" />
     <Compile Include="src\Utilities\File.cs" />
     <Compile Include="src\Utilities\IFile.cs" />
     <Compile Include="src\Utilities\Preconditions.cs" />

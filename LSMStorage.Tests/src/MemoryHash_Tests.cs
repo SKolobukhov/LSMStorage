@@ -14,6 +14,7 @@ namespace LSMStorage.Tests
 
         private string filePath;
         private MemTable memTable;
+        private OpLogManager opLogManager;
         private OperationSerializer serializer;
 
         [OneTimeSetUp]
@@ -38,12 +39,14 @@ namespace LSMStorage.Tests
         public void SetUp()
         {
             filePath = Path.Combine(Directory, Guid.NewGuid().ToString());
-            memTable = new MemTable(new OpLogManager(new File(filePath), serializer));
+            opLogManager = new OpLogManager(new File(filePath), serializer);
+            memTable = new MemTable(opLogManager);
         }
 
         [TearDown]
         public void TearDown()
         {
+            opLogManager.Dispose();
             if (System.IO.File.Exists(filePath))
             {
                 System.IO.File.Delete(filePath);

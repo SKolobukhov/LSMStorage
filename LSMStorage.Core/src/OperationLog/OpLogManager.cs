@@ -6,95 +6,60 @@ namespace LSMStorage.Core
 {
     public class OpLogManager : IOpLogReader, IOpLogWriter
     {
-        private long readOffset;
-        private long writeOffset;
-        private readonly IFile opLogFile;
+        private readonly Stream readStream;
+        private readonly Stream writeStream;
+        private readonly Mutex readMutex = new Mutex();
+        private readonly Mutex writeMutex = new Mutex();
         private readonly IOperationSerializer serializer;
-        private readonly Mutex mutex = new Mutex();
 
         public OpLogManager(IFile opLogFile, IOperationSerializer serializer)
         {
-            this.opLogFile = opLogFile;
+            readStream = opLogFile.OpenStream(FileAccess.Read, FileShare.ReadWrite);
+            writeStream = opLogFile.OpenStream(FileAccess.Write, FileShare.Read);
             this.serializer = serializer;
-            using (var stream = opLogFile.GetStream())
-            {
-                Preconditions.EnsureCondition(stream.CanRead, "opLogFile", "Can not read from stream");
-                Preconditions.EnsureCondition(stream.CanWrite, "opLogFile", "Can not write to stream");
-                Preconditions.EnsureCondition(stream.CanSeek, "opLogFile", "Can not seek on stream");
-            }
         }
 
-        public bool CanRead
-        {
-            get
-            {
-                var result = false;
-
-                mutex.WaitOne();
-                using (var stream = opLogFile.GetStream())
-                {
-                    result = readOffset < stream.Length;
-                }
-                mutex.ReleaseMutex();
-
-                return result;
-            }
-        }
+        public bool CanRead => readStream.Position < readStream.Length;
 
         public IOperation Read()
         {
-            IOperation result;
-            mutex.WaitOne();
-
-            using (var stream = opLogFile.GetStream())
-            {
-                stream.Seek(readOffset, SeekOrigin.Begin);
-                result = serializer.Deserialize(stream);
-                readOffset = stream.Position;
-            }
-            mutex.ReleaseMutex();
+            readMutex.WaitOne();
+            var result = serializer.Deserialize(readStream);
+            readMutex.ReleaseMutex();
             return result;
         }
 
         public async Task<IOperation> ReadAsync()
         {
-            IOperation result;
-            mutex.WaitOne();
-
-            using (var stream = opLogFile.GetStream())
-            {
-                stream.Seek(readOffset, SeekOrigin.Begin);
-                result = await serializer.DeserializeAsync(stream).ConfigureAwait(false);
-                readOffset = stream.Position;
-            }
-            mutex.ReleaseMutex();
+            readMutex.WaitOne();
+            var result = await serializer.DeserializeAsync(readStream).ConfigureAwait(false);
+            readMutex.ReleaseMutex();
             return result;
         }
 
         public void Write(IOperation operation)
         {
-            mutex.WaitOne();
-            using (var stream = opLogFile.GetStream())
-            {
-                stream.Seek(writeOffset, SeekOrigin.Begin);
-                var bytes = serializer.Serialize(operation);
-                stream.Write(bytes, 0, bytes.Length);
-                writeOffset = stream.Position;
-            }
-            mutex.ReleaseMutex();
+            var bytes = serializer.Serialize(operation);
+            writeMutex.WaitOne();
+            writeStream.Write(bytes, 0, bytes.Length);
+            writeStream.Flush();
+            writeMutex.ReleaseMutex();
         }
 
         public async Task WriteAsync(IOperation operation)
         {
-            mutex.WaitOne();
-            using (var stream = opLogFile.GetStream())
-            {
-                stream.Seek(writeOffset, SeekOrigin.Begin);
-                var bytes = serializer.Serialize(operation);
-                await stream.WriteAsync(bytes, 0, bytes.Length).ConfigureAwait(false);
-                writeOffset = stream.Position;
-            }
-            mutex.ReleaseMutex();
+            var bytes = serializer.Serialize(operation);
+            writeMutex.WaitOne();
+            await writeStream.WriteAsync(bytes, 0, bytes.Length).ConfigureAwait(false);
+            await writeStream.FlushAsync().ConfigureAwait(false);
+            writeMutex.ReleaseMutex();
+        }
+
+        public void Dispose()
+        {
+            readMutex.Dispose();
+            readStream.Dispose();
+            writeStream.Dispose();
         }
     }
 }

@@ -11,9 +11,19 @@ namespace LSMStorage.Core
             Path = path;
         }
 
-        public Stream GetStream()
+        public Stream OpenStream()
         {
-            return System.IO.File.Open(Path, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            return System.IO.File.Open(Path, FileMode.OpenOrCreate);
+        }
+
+        public Stream OpenStream(FileAccess fileAccess)
+        {
+            return System.IO.File.Open(Path, FileMode.OpenOrCreate, fileAccess);
+        }
+
+        public Stream OpenStream(FileAccess fileAccess, FileShare fileShare)
+        {
+            return System.IO.File.Open(Path, FileMode.OpenOrCreate, fileAccess, fileShare);
         }
     }
 }

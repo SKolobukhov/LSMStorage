@@ -1,13 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace LSMStorage.Core
 {
-    public interface IMemTable: IEnumerable<Item>
+    public interface IMemTable
     {
         void Apply(IOperation operation);
         Task ApplyAsync(IOperation operation);
-        
-        Item Get(string key);
     }
 }

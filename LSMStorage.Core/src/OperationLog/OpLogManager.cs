@@ -12,6 +12,8 @@ namespace LSMStorage.Core
         private readonly Mutex writeMutex = new Mutex();
         private readonly IOperationSerializer serializer;
 
+        public long Position => writeStream.Position;
+
         public OpLogManager(IFile opLogFile, IOperationSerializer serializer)
         {
             readStream = opLogFile.OpenStream(FileAccess.Read, FileShare.ReadWrite);
@@ -36,10 +38,15 @@ namespace LSMStorage.Core
             readMutex.ReleaseMutex();
             return result;
         }
-
+        
         public void Write(IOperation operation)
         {
             var bytes = serializer.Serialize(operation);
+            if (bytes.Length == 0)
+            {
+                return;
+            }
+
             writeMutex.WaitOne();
             writeStream.Write(bytes, 0, bytes.Length);
             writeStream.Flush();
@@ -49,6 +56,11 @@ namespace LSMStorage.Core
         public async Task WriteAsync(IOperation operation)
         {
             var bytes = serializer.Serialize(operation);
+            if (bytes.Length == 0)
+            {
+                return;
+            }
+
             writeMutex.WaitOne();
             await writeStream.WriteAsync(bytes, 0, bytes.Length).ConfigureAwait(false);
             await writeStream.FlushAsync().ConfigureAwait(false);

@@ -1,25 +1,26 @@
-﻿namespace LSMStorage.Core
+namespace LSMStorage.Core
 {
-    public class RemoveOperation: IOperation
+    public class PutOperation: IOperation
     {
         public string Key { get; }
+        public string Value { get; }
         public long Timestamp { get; }
 
-
-        public RemoveOperation(string key, long timestamp)
+        public PutOperation(string key, string value, long timestamp)
         {
             Key = key;
+            Value = value;
             Timestamp = timestamp;
         }
-        
+
         public void Apply(IMemStorage storage)
         {
-            storage.Remove(Key, Timestamp);
+            storage.Update(Key, Value, Timestamp);
         }
 
         public override string ToString()
         {
-            return $"Remove {Key}";
+            return $"Put ({Key}, {Value})";
         }
     }
 }

@@ -30,7 +30,7 @@ namespace LSMStorage.Tests
         {
             for (int i = 0; i < databaseManager.ItemsTreshold + 1; i++)
             {
-                databaseManager.Apply(Item.CreateItem(i.ToString(), i.ToString()).ToOperation());
+                databaseManager.Apply(Item.CreateItem(i.ToString(), i.ToString(), i).ToOperation());
             }
 
             switch (method)

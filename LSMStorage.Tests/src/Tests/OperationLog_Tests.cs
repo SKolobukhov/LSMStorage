@@ -20,21 +20,26 @@ namespace LSMStorage.Tests
         {
             System.IO.Directory.CreateDirectory(Directory);
             serializer = new OperationSerializer();
-            serializer.AddSerializer<AddOperationSerializer>();
+            serializer.AddEmptySerializer<GetOperation>();
+            serializer.AddSerializer<PutOperationSerializer>();
             serializer.AddSerializer<RemoveOperationSerializer>();
         }
 
         [OneTimeTearDown]
         public void OneTimeTearDown()
         {
-            if (System.IO.Directory.Exists(Directory))
+            try
             {
-                foreach (var file in System.IO.Directory.EnumerateFiles(Directory))
+                if (System.IO.Directory.Exists(Directory))
                 {
-                    System.IO.File.Delete(file);
+                    foreach (var file in System.IO.Directory.EnumerateFiles(Directory))
+                    {
+                        System.IO.File.Delete(file);
+                    }
+                    System.IO.Directory.Delete(Directory, true);
                 }
-                System.IO.Directory.Delete(Directory, true);
             }
+            catch (Exception) { }
         }
 
         [SetUp]
@@ -47,50 +52,49 @@ namespace LSMStorage.Tests
         [Test]
         public void Should_apply_add_operation_from_opLog()
         {
-            var item1 = Item.CreateItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
-            var item2 = Item.CreateItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+            var item1 = Item.CreateItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 1);
+            var item2 = Item.CreateItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 2);
 
             using (var opLogManager = new OpLogManager(file, serializer))
             {
-                var memTable = new MemTable(opLogManager);
+                var memTable = new MemTable(opLogManager, null, ulong.MaxValue);
                 memTable.Apply(item1.ToOperation());
                 memTable.Apply(item2.ToOperation());
             }
             using (var opLogManager = new OpLogManager(file, serializer))
             {
                 var opLogApplier = new OpLogApplier(opLogManager);
-                var memTable = new MemTable(opLogManager);
+                var memTable = new MemTable(opLogManager, null, ulong.MaxValue);
                 opLogApplier.Apply(memTable);
 
                 var itemForKey1 = memTable.Get(item1.Key);
                 var itemForKey2 = memTable.Get(item2.Key);
 
-                itemForKey1.Should().Be(item1);
-                itemForKey2.Should().Be(item2);
+                itemForKey1.Should().Be(item1.Value);
+                itemForKey2.Should().Be(item2.Value);
             }
         }
 
         [Test]
         public void Should_apply_remove_operation_from_opLog()
         {
-            var item1 = Item.CreateItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
-            var item2 = Item.CreateTombStone(item1.Key);
+            var item = Item.CreateItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 1);
+            var tombStone = Item.CreateTombStone(item, 2);
 
             using (var opLogManager = new OpLogManager(file, serializer))
             {
-                var memTable = new MemTable(opLogManager);
-                memTable.Apply(item1.ToOperation());
-                memTable.Apply(item2.ToOperation());
+                var memTable = new MemTable(opLogManager, null, ulong.MaxValue);
+                memTable.Apply(item.ToOperation());
+                memTable.Apply(tombStone.ToOperation());
             }
             using (var opLogManager = new OpLogManager(file, serializer))
             {
                 var opLogApplier = new OpLogApplier(opLogManager);
-                var memTable = new MemTable(opLogManager);
+                var memTable = new MemTable(opLogManager, null, ulong.MaxValue);
                 opLogApplier.Apply(memTable);
 
-                var itemForKey = memTable.Get(item2.Key);
-
-                itemForKey.Should().Be(item2);
+                memTable.Get(tombStone.Key, false).Should().BeNull();
+                memTable.Get(tombStone.Key, true).Should().Be(item.Value);
             }
         }
     }

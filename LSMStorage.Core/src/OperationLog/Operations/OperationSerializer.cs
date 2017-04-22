@@ -8,14 +8,13 @@ namespace LSMStorage.Core
 {
     public class OperationSerializer : IOperationSerializer
     {
+        public byte Marker { get; }
         private static readonly Type IOperationSerializerType = typeof(IOperationSerializer);
+        private static readonly IOperationSerializer EmptySerializer = new FakeOperationSerializer();
 
         private readonly Dictionary<byte, IOperationSerializer> serializersForMarkerMap = new Dictionary<byte, IOperationSerializer>();
         private readonly Dictionary<Type, IOperationSerializer> serializersForTypeMap = new Dictionary<Type, IOperationSerializer>();
 
-        public byte Marker => 0xFF;
-
-        
         public void AddSerializer<TOperationSerializer>()
             where TOperationSerializer : IOperationSerializer, new()
         {
@@ -25,17 +24,24 @@ namespace LSMStorage.Core
             Preconditions.EnsureCondition(baseType != IOperationSerializerType, "serializerType", $"Should implements 'IOperationSerializer<>'");
             Preconditions.EnsureCondition(!serializersForMarkerMap.ContainsKey(serializer.Marker), "serializer", $"Serializer for marker '{serializer.Marker:X}' was added");
 
-            serializersForMarkerMap.Add(serializer.Marker, serializer);
-            serializersForTypeMap.Add(baseType.GenericTypeArguments.First(), serializer);
+            serializersForMarkerMap[serializer.Marker] = serializer;
+            serializersForTypeMap[baseType.GenericTypeArguments.First()] = serializer;
         }
 
         public void AddSerializer<TOperation>(IOperationSerializer<TOperation> serializer)
             where TOperation : IOperation
         {
-            Preconditions.EnsureCondition(!serializersForMarkerMap.ContainsKey(serializer.Marker), "serializer", $"Serializer for marker '{serializer.Marker:X}' was added");
-            
-            serializersForMarkerMap.Add(serializer.Marker, serializer);
-            serializersForTypeMap.Add(typeof(TOperation), serializer);
+            Preconditions.EnsureCondition(!serializersForMarkerMap.ContainsKey(serializer.Marker), nameof(serializer), $"Serializer for marker '{serializer.Marker:X}' was added");
+
+            serializersForMarkerMap[serializer.Marker] = serializer;
+            serializersForTypeMap[typeof(TOperation)] = serializer;
+        }
+
+
+        public void AddEmptySerializer<TOperation>()
+            where TOperation : IOperation
+        {
+            serializersForTypeMap[typeof(TOperation)] = EmptySerializer;
         }
 
         public byte[] Serialize(IOperation operation)
@@ -55,7 +61,7 @@ namespace LSMStorage.Core
             IOperationSerializer serializer;
             if (!serializersForMarkerMap.TryGetValue(result, out serializer))
             {
-                throw new ApplicationException($"Not found serializer for marker '{(byte)result:X}'");
+                throw new ApplicationException($"Not found serializer for marker '{result:X}'");
             }
             return serializer;
         }

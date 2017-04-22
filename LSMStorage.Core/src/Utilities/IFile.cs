@@ -7,5 +7,7 @@ namespace LSMStorage.Core
         Stream OpenStream();
         Stream OpenStream(FileAccess fileAccess);
         Stream OpenStream(FileAccess fileAccess, FileShare fileShare);
+        Stream OpenStream(FileMode fileMode, FileAccess fileAccess, FileShare fileShare);
+        void DeleteFile();
     }
 }

@@ -1,56 +1,60 @@
-using System.Collections;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
+using System;
+using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LSMStorage.Core
 {
     public class MemTable : IMemTable
     {
+        private readonly Mutex mutex = new Mutex();
+        private readonly IMemStorage memStorage;
         private readonly IOpLogWriter opLogWriter;
-        private readonly ConcurrentDictionary<string, Item> memoryHash;
+        private readonly ISnapshotWriter snapshotWriter;
 
-        public MemTable(IOpLogWriter opLogWriter)
+        private ulong operationNumber;
+        private readonly ulong snapshotPeriod;
+
+        public MemTable(IOpLogWriter opLogWriter, ISnapshotWriter snapshotWriter, ulong snapshotPeriod)
+            : this(new MemHashStorage(), opLogWriter, snapshotWriter, snapshotPeriod)
+        { }
+
+        public MemTable(IMemStorage memStorage, IOpLogWriter opLogWriter, ISnapshotWriter snapshotWriter, ulong snapshotPeriod)
         {
+            this.memStorage = memStorage;
             this.opLogWriter = opLogWriter;
-            memoryHash = new ConcurrentDictionary<string, Item>();
-        }
-
-        private void Add(Item item)
-        {
-            memoryHash.AddOrUpdate(item.Key, item, (key, curItem) => item);
+            this.snapshotWriter = snapshotWriter;
+            this.snapshotPeriod = snapshotPeriod;
         }
 
         public void Apply(IOperation operation)
         {
+            mutex.WaitOne();
+            operationNumber++;
+            if (operationNumber == snapshotPeriod)
+            {
+                operationNumber = 0;
+                snapshotWriter.Write(memStorage, opLogWriter.Position);
+            }
+            mutex.ReleaseMutex();
+
             opLogWriter.Write(operation);
-            Add(operation.ToItem());
+            operation.Apply(memStorage);
         }
 
         public async Task ApplyAsync(IOperation operation)
         {
+            mutex.WaitOne();
+            operationNumber++;
+            if (operationNumber == snapshotPeriod)
+            {
+                operationNumber = 0;
+                await snapshotWriter.WriteAsync(memStorage, opLogWriter.Position);
+            }
+            mutex.ReleaseMutex();
+
             await opLogWriter.WriteAsync(operation).ConfigureAwait(false);
-            Add(operation.ToItem());
-        }
-
-        public Item Get(string key)
-        {
-            Item value;
-            return memoryHash.TryGetValue(key, out value) ? value : null;
-        }
-
-        public IEnumerator<Item> GetEnumerator()
-        {
-            return memoryHash
-                .ToArray()
-                .Select(p => p.Value)
-                .GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
+            operation.Apply(memStorage);
         }
     }
 }

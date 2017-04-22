@@ -2,35 +2,41 @@
 {
     public class Item
     {
-        public static Item CreateItem(string key, string value)
+        public static Item CreateItem(string key, string value, long timestamp)
         {
-            return new Item(key, value, false);
+            return new Item(key, value, false, timestamp);
         }
 
-        public static Item CreateTombStone(string key)
+        public static Item CreateItem(Item item, long timestamp)
         {
-            return new Item(key, null, true);
+            return new Item(item.Key, item.Value, false, timestamp);
+        }
+        
+        public static Item CreateTombStone(Item item, long timestamp)
+        {
+            return new Item(item.Key, item.Value, true, timestamp);
         }
 
-        private Item(string key, string value, bool isTombstone)
+        public readonly string Key;
+        public readonly string Value;
+        public readonly bool IsTombStone;
+        public readonly long Timestamp;
+
+        private Item(string key, string value, bool isTombstone, long timestamp)
         {
             Key = key;
             Value = value;
             IsTombStone = isTombstone;
+            Timestamp = timestamp;
         }
-
-        public string Key { get; }
-
-        public string Value { get; }
-
-        public bool IsTombStone { get; }
 
         #region EqualityMembers
         private bool Equals(Item other)
         {
             return string.Equals(Key, other.Key)
                 && string.Equals(Value, other.Value)
-                && IsTombStone == other.IsTombStone;
+                && IsTombStone == other.IsTombStone
+                && Timestamp == other.Timestamp;
         }
 
         public override bool Equals(object obj)
@@ -48,7 +54,7 @@
                 var hashCode = Key?.GetHashCode() ?? 0;
                 hashCode = (hashCode * 397) ^ (Value?.GetHashCode() ?? 0);
                 hashCode = (hashCode * 397) ^ IsTombStone.GetHashCode();
-                return hashCode;
+                return (hashCode * 397) ^ Timestamp.GetHashCode();
             }
         }
         #endregion

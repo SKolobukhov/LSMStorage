@@ -52,10 +52,10 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\DatabaseManagerTests.cs" />
-    <Compile Include="src\ItemExtensions.cs" />
-    <Compile Include="src\MemoryHash_Tests.cs" />
-    <Compile Include="src\OperationLog_Tests.cs" />
+    <Compile Include="src\Tests\DatabaseManagerTests.cs" />
+    <Compile Include="src\Utilities\Extensions.cs" />
+    <Compile Include="src\Tests\MemoryHash_Tests.cs" />
+    <Compile Include="src\Tests\OperationLog_Tests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -67,6 +67,7 @@
       <Name>LSMStorage.Core</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -2,6 +2,8 @@ namespace LSMStorage.Core
 {
     public interface IOperation
     {
-        Item ToItem();
+        long Timestamp { get; }
+
+        void Apply(IMemStorage storage);
     }
 }

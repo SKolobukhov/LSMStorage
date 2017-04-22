@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using FluentAssertions;
 using LSMStorage.Core;
 using NUnit.Framework;
@@ -22,17 +23,26 @@ namespace LSMStorage.Tests
         {
             System.IO.Directory.CreateDirectory(Directory);
             serializer = new OperationSerializer();
-            serializer.AddSerializer<AddOperationSerializer>();
+            serializer.AddEmptySerializer<GetOperation>();
+            serializer.AddSerializer<PutOperationSerializer>();
             serializer.AddSerializer<RemoveOperationSerializer>();
         }
 
         [OneTimeTearDown]
         public void OneTimeTearDown()
         {
-            if (System.IO.Directory.Exists(Directory))
+            try
             {
-                System.IO.Directory.Delete(Directory, true);
+                if (System.IO.Directory.Exists(Directory))
+                {
+                    foreach (var file in System.IO.Directory.EnumerateFiles(Directory))
+                    {
+                        System.IO.File.Delete(file);
+                    }
+                    System.IO.Directory.Delete(Directory, true);
+                }
             }
+            catch (Exception) { }
         }
 
         [SetUp]
@@ -40,7 +50,7 @@ namespace LSMStorage.Tests
         {
             filePath = Path.Combine(Directory, Guid.NewGuid().ToString());
             opLogManager = new OpLogManager(new File(filePath), serializer);
-            memTable = new MemTable(opLogManager);
+            memTable = new MemTable(opLogManager, null, ulong.MaxValue);
         }
 
         [TearDown]
@@ -56,8 +66,8 @@ namespace LSMStorage.Tests
         [Test]
         public void Should_add_items()
         {
-            var item1 = Item.CreateItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
-            var item2 = Item.CreateItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+            var item1 = Item.CreateItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 1);
+            var item2 = Item.CreateItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 2);
 
             memTable.Apply(item1.ToOperation());
             memTable.Apply(item2.ToOperation());
@@ -65,8 +75,8 @@ namespace LSMStorage.Tests
             var itemFromTable1 = memTable.Get(item1.Key);
             var itemFromTable2 = memTable.Get(item2.Key);
 
-            itemFromTable1.Should().Be(item1);
-            itemFromTable2.Should().Be(item2);
+            itemFromTable1.Should().Be(item1.Value);
+            itemFromTable2.Should().Be(item2.Value);
         }
 
         [Test]
@@ -74,15 +84,17 @@ namespace LSMStorage.Tests
         {
             var key = Guid.NewGuid().ToString();
 
-            var item = Item.CreateItem(key, Guid.NewGuid().ToString());
-            var tombstone = Item.CreateTombStone(key);
+            var item = Item.CreateItem(key, Guid.NewGuid().ToString(), 1);
+            var tombstone = Item.CreateTombStone(item, 2);
 
             memTable.Apply(item.ToOperation());
             memTable.Apply(tombstone.ToOperation());
 
-            var itemFromTable = memTable.Get(key);
+            Thread.Sleep(1000);
 
-            itemFromTable.Should().Be(tombstone);
+            memTable.Get(key, false).Should().BeNull();
+            memTable.Get(key, true).Should().Be(item.Value);
+
         }
     }
 }
